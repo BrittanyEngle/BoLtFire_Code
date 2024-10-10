@@ -1,7 +1,9 @@
 # BoLtFire
 The frequency and severity of fire weather have increased under climate change, particularly in high-latitude boreal forests. Lightning, a key ignition source globally, is also expected to become more frequent with climate change and could significantly increase burn area. Current research on lightning-ignited wildfires (LIW) has a long history in boreal ecosystems but has typically focused on North America due to better data availability, while the lack of publicly available data for Eurasia has hindered our comprehensive understanding of important characteristics of LIW, such as holdover time, lightning-ignition efficiency, frequency, and spatial distribution of lightning-ignited wildfires in boreal forests. This study introduces the Temporal Minimum Distance (TMin) method, a novel approach to matching lightning strikes with wildfires without requiring ignition location, that outperformed current methodologies. As a result, we developed a comprehensive dataset of lightning-ignited wildfires across the entire boreal forest from 2012 to 2022, encompassing 6,228 fires — 4,186 in Eurasia and 2,042 in North America — each over 200 hectares in size. This dataset provides new opportunities to model ignition and spread dynamics of boreal wildfires and offers deeper insights into lightning-driven fire activity globally. 
 
-The code to create this dataset can be found in this account. 
+The dataset can be found here: https://zenodo.org/records/13897163 
+
+The code to create the dataset, can be found here, in this GitHub.
 
 The end product will result in a vector based dataset:
 - **FireID:**	Unique fire identification number
