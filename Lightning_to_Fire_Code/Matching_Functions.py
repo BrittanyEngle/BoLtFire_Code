@@ -7,6 +7,10 @@ from Utilities.Most_Used_Functions import Export_Shapefile, getGlanceCRS
 import pandas as pd
 from pyproj import CRS,Transformer
 from shapely.geometry import Point
+import shapely
+from timezonefinder import TimezoneFinder
+import pytz
+from pytz import timezone
 pd.options.mode.chained_assignment = None
 
 def computeDistance(lat1,long1, lat2,long2):
@@ -96,7 +100,7 @@ def matching_function_polygon_tmin(tmax=14, smax = 10,unique_lightning = False, 
             # Iterate over each polygon
             LIW = []
             for _, polygon in Fire_Perimeters.iterrows():
-                initial_date = datetime.strptime(polygon["initialdat"], "%Y-%m-%d")
+                initial_date = compute_time_offset(polygon)
                 buffered_initial_date = initial_date - timedelta(hours=tmax_hours)
                 initial_date += timedelta(days=1, microseconds=-1)
                 polygon["fail_tmin"] = ""
@@ -178,3 +182,18 @@ def matching_function_polygon_tmin(tmax=14, smax = 10,unique_lightning = False, 
             Export_Shapefile(output, output_folder, output_filename)
         print(f"{year} took {(datetime.now() - start_time).total_seconds()}s to process")
 
+def compute_time_offset(geometry):
+    transformer = Transformer.from_crs(CRS.from_wkt(getGlanceCRS("NA")),CRS.from_epsg(4326))
+    center = shapely.centroid(geometry.geometry)
+    center =  Point(transformer.transform(center.x,center.y))
+    year_str, month_str, day_str = geometry['initialdat'].split("-")
+    year = int(year_str)
+    month = int(month_str)
+    day = int(day_str)
+    tf = TimezoneFinder() #
+    tz = tf.timezone_at(lng = center.y, lat = center.x) 
+    zone_info = timezone(tz)
+    local_noon = datetime(year, month, day, 12, tzinfo = zone_info) # 2020-11-01 12:00:00-08:00
+    local_noon_utc = local_noon.astimezone(pytz.utc)
+    local_noon_utc = local_noon_utc.replace(tzinfo=None)
+    return local_noon_utc

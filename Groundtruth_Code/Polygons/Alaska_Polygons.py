@@ -93,7 +93,7 @@ def alaska_filter_points():
     Alaska_Dataset_Lightning_Date = Alaska_Dataset_Lightning_Date[Alaska_Dataset_Lightning_Date['EST_HA'] >= 100]
 
     # Convert dates to string format
-    Alaska_Dataset_Lightning_Date["DISCOVERYD"] = Alaska_Dataset_Lightning_Date["DISCOVERYD"].dt.strftime("%Y-%m-%d")
+    Alaska_Dataset_Lightning_Date["DISCOVERYD"] = Alaska_Dataset_Lightning_Date["DISCOVERYD"].dt.strftime("%Y-%m-%dT%H:%M:%S.%f")
     Alaska_Dataset_Lightning_Date["OUTDATE"] = Alaska_Dataset_Lightning_Date["OUTDATE"].dt.strftime("%Y-%m-%d")
 
     # Export the filtered dataset
@@ -169,4 +169,4 @@ def alaska_merge_polygons():
     output["OUTDATE"] = output["OUTDATE"].dt.strftime("%Y-%m-%d")
     output_folder = getGroundtruth_Processed()
     output_filename = "Alaska_Groundtruth_merged_points_perimeters"
-    Export_Shapefile(gpd.GeoDataFrame(output), output_folder, output_filename)
+    Export_Shapefile(gpd.GeoDataFrame(output).to_crs(getGlanceCRS("NA")), output_folder, output_filename)

@@ -184,42 +184,55 @@ def plot_distribution_subplots(results, output_folder, output_filename):
     
     # Define the subplot titles, labels, and colors
     plots_info = [
-        (axes[0, 0], t_holdover, 'b', 't_holdrnd', 'Holdover Days', 'TMin Holdover Distribution'),
-        (axes[0, 1], t_src_dist, 'r', 't_src_dist', 'Distance', 'TMin Distance from Ignition Point Distribution'),
-        (axes[1, 0], a_holdover, 'g', 'a_holdrnd', 'Holdover Days', 'MaxA Holdover Distribution'),
-        (axes[1, 1], a_src_dist, 'c', 'a_src_dist', 'Distance', 'MaxA Distance from Ignition Point Distribution'),
-        (axes[2, 0], d_holdover, 'm', 'd_holdrnd', 'Holdover Days', 'DMin Holdover Distribution'),
-        (axes[2, 1], d_src_dist, 'y', 'd_src_dist', 'Distance', 'DMin Distance from Ignition Point Distribution')
+        (axes[0, 0], t_holdover, 'b', 't_holdrnd', 'Holdover [Days]', 'TMin Holdover Distribution'),
+        (axes[0, 1], t_src_dist, 'r', 't_src_dist', 'Distance [km]', 'TMin Distance from Ignition Point Distribution'),
+        (axes[1, 0], a_holdover, 'g', 'a_holdrnd', 'Holdover [Days]', 'MaxA Holdover Distribution'),
+        (axes[1, 1], a_src_dist, 'c', 'a_src_dist', 'Distance [km]', 'MaxA Distance from Ignition Point Distribution'),
+        (axes[2, 0], d_holdover, 'm', 'd_holdrnd', 'Holdover [Days]', 'DMin Holdover Distribution'),
+        (axes[2, 1], d_src_dist, 'y', 'd_src_dist', 'Distance [km]', 'DMin Distance from Ignition Point Distribution')
     ]
     
     # Plot each subplot
     # Plot each subplot
+    hbins = 1
+    dbins = 1
     for ax, data, color, label, xlabel, title in plots_info:
-        if len(data) > 1:  # Ensure there's enough data to compute statistics
-            # Calculate optimal bin width using the Freedman-Diaconis rule
-            q25, q75 = np.percentile(data, [25, 75])
-            bin_width = 2 * (q75 - q25) / len(data)**(1/3)
-            if bin_width > 0:
-                bins = np.arange(min(data), max(data) + bin_width, bin_width)
-            else:
-                # Fallback to a fixed number of bins if bin_width is zero or invalid
-                bins = 50
+        if xlabel == "Holdover [Days]": 
+            hbins = max(hbins, max(data))
+        elif xlabel == "Distance [km]":
+            dbins = max(dbins, max(data))
+     
+    for ax, data, color, label, xlabel, title in plots_info:
+        if xlabel == "Holdover [Days]":
+            bins = int(hbins)
         else:
-            # If not enough data, use a single bin
-            bins = 1
+            bins = int(dbins/1000)
+            data = data/1000
 
-        ax.hist(data, bins=bins, alpha=0.5, color=color, label=label, rwidth=0.8)
+        if label == "d_holdrnd":
+            ax.hist(data,bins=np.arange(-1,bins+2), alpha=0.5, color=color,label=label,rwidth=0.8)
+            xticks = np.arange(-1,bins+1)
+            xtickslabels = [f"+{x}" if x < 0 else str(x) for x in xticks]
+            ax.set_xticks(xticks)
+            ax.set_xticklabels(xtickslabels)
+        elif label in ["a_holdrnd","t_holdrnd"]:
+            ax.hist(data,bins=np.arange(0,bins+2), alpha=0.5, color=color,label=label,rwidth=0.8)
+            xticks = np.arange(0,bins+1)
+            xtickslabels = [f"+{x}" if x < 0 else str(x) for x in xticks]
+            ax.set_xticks(xticks)
+            ax.set_xticklabels(xtickslabels)
+        else:
+            ax.hist(data, bins=bins, alpha=0.5, color=color, label=label, rwidth=0.8, range = (0,bins))
         ax.set_xlabel(xlabel)
         ax.set_ylabel('Frequency')
         ax.set_title(title)
-        ax.legend()
     # Adjust layout
     plt.tight_layout()
 
     # Save the figure
     output_path = os.path.join(output_folder, output_filename)
     plt.savefig(output_path)
-    plt.close(fig)  
+    plt.close(fig)
 
 
 def add_g_spatial_column(results):

@@ -18,6 +18,7 @@ Alaska_Polygons.alaska_merge_polygons()
 Canada_Filter_Polygons.canada_filter_points()
 Canada_Filter_Polygons.canada_filter_polygons()
 Canada_Filter_Polygons.canada_merge_polygons()
+Canada_Filter_Polygons.canada_convert_to_noon()
 Merge_Groundtruths.merge_groundtruths_raster()
 Matching_Functions_Groundtruth.split_into_years()
 

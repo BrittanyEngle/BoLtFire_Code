@@ -1,6 +1,11 @@
 import geopandas as gpd
 import pandas as pd
 import math
+import pytz
+import shapely
+from pytz import timezone
+from timezonefinder import TimezoneFinder
+from datetime import timedelta,datetime
 from Utilities.Path_Utilities import getGroundtruth_Canada_Points,getGroundtruth_Canada_Polygons,getGroundtruth_Processed 
 from Utilities.Most_Used_Functions import Export_Shapefile, getGlanceCRS,load_shapefile
 
@@ -137,13 +142,35 @@ def canada_merge_polygons():
             new_row["geometry"] = point_row["geometry"].buffer(math.sqrt((float(point_row["SIZE_HA"])*10000)/math.pi))
             output.append(new_row)
 
-    output = gpd.GeoDataFrame(output, crs=getGlanceCRS("NA"))
     output["REP_DATE"] = output["REP_DATE"].dt.strftime("%Y-%m-%d")
+    output = gpd.GeoDataFrame(output, crs=getGlanceCRS("NA"))
     output_folder = getGroundtruth_Processed()
     output_filename = "Canada_Groundtruth_merged_points_perimeters"
     Export_Shapefile(gpd.GeoDataFrame(output), output_folder, output_filename)
         
+def canada_convert_to_noon():
+    output_folder = getGroundtruth_Processed()
+    output_filename = "Canada_Groundtruth_merged_points_perimeters"
 
+    df = load_shapefile(output_folder+output_filename+".shp",getGlanceCRS("NA")).to_crs(4326)
+    tf = TimezoneFinder() ## Convert Local to UTC
+    for index,row in df.iterrows():
+        center = shapely.centroid(row.geometry)
+        year_str, month_str, day_str = row['REP_DATE'].split("-")
+        date = datetime.strptime(row['REP_DATE'], "%Y-%m-%d")
+        year = int(year_str)
+        month = int(month_str)
+        day = int(day_str)
+        tz = tf.timezone_at(lng = center.x, lat = center.y)
+        zone_info = timezone(tz)
+        local_noon = datetime(year, month, day, 12, tzinfo = zone_info) # 2020-11-01 12:00:00-08:00
+        local_tz = timezone(tz)
+        utc_tz = local_tz.normalize(local_tz.localize(date)).astimezone(pytz.utc)
+        local_noon_utc = local_noon.astimezone(pytz.utc)
+        local_noon_utc_string = local_noon_utc.strftime("%Y-%m-%dT%H:%M:%S.%f")
+        df.at[index,"REP_DATE"] = local_noon_utc_string
+    
+    Export_Shapefile(gpd.GeoDataFrame(df).to_crs(getGlanceCRS("NA")), output_folder, output_filename)
 
 
 

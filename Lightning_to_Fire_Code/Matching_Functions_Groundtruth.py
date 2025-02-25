@@ -129,7 +129,7 @@ def matching_function_all(time_delta_days=14, distance_delta_km=10):
         print(f"{year} took {(datetime.now() - start_time).total_seconds()}s to process")
 
 def perform_tmin(row,lightning_flashes ,time_buffer, distance_buffer):
-    initial_date = datetime.strptime(row["StartDate"], "%Y-%m-%d")
+    initial_date = datetime.strptime(row["StartDate"], "%Y-%m-%dT%H:%M:%S.%f")
     buffered_initial_date = initial_date - timedelta(hours=time_buffer)
     initial_date += timedelta(days=1, microseconds=-1)
     row["fail_tmin"] = ""
@@ -170,6 +170,7 @@ def perform_tmin(row,lightning_flashes ,time_buffer, distance_buffer):
         row["fail_tmin"] = "temporal"
         return row
 
+    total_candidates_tmin = len(initial_spatial_temporal_filter) 
     if row["t_Spatial"]:
         initial_spatial_temporal_filter["t_min"] = initial_spatial_temporal_filter.apply(
             lambda row: compute_t_min(row, initial_date), axis=1)
@@ -188,6 +189,7 @@ def perform_tmin(row,lightning_flashes ,time_buffer, distance_buffer):
     output_row["t_long"] = Lightning_Candidate["longitude"]
     output_row["t_ts"] = Lightning_Candidate["timestamp"].strftime("%Y-%m-%dT%H:%M:%S.%f")
     output_row["t_src_dist"] = computeDistance(output_row["LATITUDE"],output_row["LONGITUDE"],output_row["t_lat"],output_row["t_long"])
+    output_row["t_cnt_flsh"] = total_candidates_tmin
     if not row["t_Spatial"]:
         output_row["t_pol_dist"] = row.geometry.distance(Lightning_Candidate["geometry"])
     return output_row
@@ -196,7 +198,7 @@ def perform_amax(row,lightning_flashes ,time_buffer, distance_buffer):
     transformer = Transformer.from_crs(CRS.from_epsg(4326),CRS.from_wkt(getGlanceCRS("NA")))
     ignition_point = Point(transformer.transform(row["LATITUDE"],row["LONGITUDE"]))
     buffered_center = ignition_point.buffer(distance_buffer) # Rep point to ensure the point is within the polygon
-    initial_date = datetime.strptime(row["StartDate"], "%Y-%m-%d")
+    initial_date = datetime.strptime(row["StartDate"], "%Y-%m-%dT%H:%M:%S.%f")
     buffered_initial_date = initial_date - timedelta(hours=time_buffer)
     initial_date += timedelta(days=1, microseconds=-1)
     row["fail_amax"] = ""
@@ -215,7 +217,7 @@ def perform_amax(row,lightning_flashes ,time_buffer, distance_buffer):
     if len(initial_spatial_temporal_filter) <= 0 :
         row["fail_amax"] = "temporal"
         return row
-
+    total_candidates_amax = len(initial_spatial_temporal_filter)
     initial_spatial_temporal_filter["A_max"] = initial_spatial_temporal_filter.apply(
         lambda r: compute_a_max(r, initial_date, ignition_point, time_buffer, distance_buffer), axis=1)
 
@@ -230,13 +232,14 @@ def perform_amax(row,lightning_flashes ,time_buffer, distance_buffer):
     output_row["a_long"] = Lightning_Candidate["longitude"]
     output_row["a_ts"] = Lightning_Candidate["timestamp"].strftime("%Y-%m-%dT%H:%M:%S.%f")
     output_row["a_src_dist"] = computeDistance(output_row["LATITUDE"],output_row["LONGITUDE"],output_row["a_lat"],output_row["a_long"])
+    output_row["a_cnt_flsh"] = total_candidates_amax
     return output_row
 
 def perform_dmin(row,lightning_flashes ,time_buffer, distance_buffer):
     transformer = Transformer.from_crs(CRS.from_epsg(4326),CRS.from_wkt(getGlanceCRS("NA")))
     ignition_point = Point(transformer.transform(row["LATITUDE"],row["LONGITUDE"]))
     buffered_center = ignition_point.buffer(distance_buffer) # Rep point to ensure the point is within the polygon
-    initial_date = datetime.strptime(row["StartDate"],"%Y-%m-%d")
+    initial_date = datetime.strptime(row["StartDate"],"%Y-%m-%dT%H:%M:%S.%f")
     end_buffered_initial_date = initial_date-timedelta(hours=time_buffer)
     initial_date += timedelta(days=1, microseconds=-1)
     plus_buffered_initial_date = initial_date+timedelta(days=1)
@@ -255,7 +258,7 @@ def perform_dmin(row,lightning_flashes ,time_buffer, distance_buffer):
     if len(initial_spatial_temporal_filter) <= 0 :
         row["fail_dmin"] = "temporal"
         return row
-
+    total_candidates_dmin = len(initial_spatial_temporal_filter)
     Lightning_Candidate = None
     min_dist = float("inf")
     for day_shift in range(0,time_buffer+1,24):
@@ -283,7 +286,11 @@ def perform_dmin(row,lightning_flashes ,time_buffer, distance_buffer):
             if distance <= min_dist:
                 min_dist = distance
                 Lightning_Candidate = lightning_on_day     
-                
+
+    if Lightning_Candidate is None:
+        row["fail_dmin"] = "temporal"
+        return row
+
     output_row = row.copy()
     output_row["d_Spatial"] = row.geometry.contains(Lightning_Candidate.geometry)      
     output_row["d_holdover"] = (initial_date - Lightning_Candidate["timestamp"]).total_seconds()/(24*3600)
@@ -294,4 +301,5 @@ def perform_dmin(row,lightning_flashes ,time_buffer, distance_buffer):
     output_row["d_long"] = Lightning_Candidate["longitude"]
     output_row["d_ts"] = Lightning_Candidate["timestamp"].strftime("%Y-%m-%dT%H:%M:%S.%f")
     output_row["d_src_dist"] = computeDistance(output_row["LATITUDE"],output_row["LONGITUDE"],output_row["d_lat"],output_row["d_long"])
+    output_row["d_cnt_flsh"] = total_candidates_dmin
     return output_row
