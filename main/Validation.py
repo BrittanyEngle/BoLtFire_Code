@@ -43,13 +43,6 @@ def merge_results_by_continent(input_folder):
        
         # Remove MODIS fires in Canada 2021 & 2022 since the agency dataset only goes to 2020
         merged_gdf['initialdat'] = pd.to_datetime(merged_gdf['initialdat'])
-        # Filter for Canada and the specified date range
-        canada_mask = (merged_gdf['country'] == 'Canada') & \
-                    (merged_gdf['initialdat'] >= '2021-01-01') & \
-                    (merged_gdf['initialdat'] <= '2022-12-31')
-
-        # Update only the entries for Canada within the date range
-        merged_gdf = merged_gdf[~canada_mask]
 
         # If necessary, format the 'initialdat' column as a string (this might not be necessary depending on the context)
         merged_gdf['initialdat'] = merged_gdf['initialdat'].dt.strftime('%Y-%m-%d')
@@ -92,6 +85,15 @@ def compute_confusion_matrix(input_folder, groundtruth_file, date_column= "Start
     Fire_Perimeters = load_shapefile(file_path + "Merged_Results_2012_2022_NA_Forest.shp","NA")
     Fire_Perimeters = Fire_Perimeters[~Fire_Perimeters["fail_tmin"].isin({'temporal', 'spatial'})]
     Fire_Perimeters = Fire_Perimeters[(Fire_Perimeters['area_ha'] >= ha_filter)]
+
+    # Filter for Canada and the specified date range
+    canada_mask = (Fire_Perimeters['country'] == 'Canada') & \
+                    (Fire_Perimeters['initialdat'] >= '2021-01-01') & \
+                    (Fire_Perimeters['initialdat'] <= '2022-12-31')
+
+    # Update only the entries for Canada within the date range
+    Fire_Perimeters = Fire_Perimeters[~canada_mask]
+
     Export_Shapefile(Fire_Perimeters,output_folder,"GWIS_Filtered")
     Fire_Perimeters[date_column] = pd.to_datetime(Fire_Perimeters["initialdat"])
     Groundtruth = load_shapefile(groundtruth_file, "NA")
